@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import kotlin.reflect.jvm.internal.impl.util.Check;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -543,46 +544,76 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 	@Override
 	public void refresh() throws BeansException, IllegalStateException {
+		// 对象锁加锁
 		synchronized (this.startupShutdownMonitor) {
 			StartupStep contextRefresh = this.applicationStartup.start("spring.context.refresh");
 
-			// Prepare this context for refreshing.
+			/* Step1: Prepare this context for refreshing.
+			 * 刷新前的预处理，设置Spring容器启动时间、开启活跃状态、撤销关闭状态、验证环境信息里一些必须存在的属性等。
+			 */
 			prepareRefresh();
 
-			// Tell the subclass to refresh the internal bean factory.
+			/* Step2: Tell the subclass to refresh the internal bean factory.
+			 * 获取BeanFactory，默认实现是DefaultListableBeanFactory
+			 * 加载BeanDefinition并注册到 BeanDefinitionRegistry
+			 */
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
-			// Prepare the bean factory for use in this context.
+			/* Step3: Prepare the bean factory for use in this context.
+			 * BeanFactory的预准备工作（BeanFactory进行一些设置，比如context的类加载器等）
+			 */
 			prepareBeanFactory(beanFactory);
 
 			try {
-				// Allows post-processing of the bean factory in context subclasses.
+				/* Step4: Allows post-processing of the bean factory in context subclasses.
+				 * BeanFactory准备工作完成后进行的后置处理工作
+				 */
 				postProcessBeanFactory(beanFactory);
 
 				StartupStep beanPostProcess = this.applicationStartup.start("spring.context.beans.post-process");
-				// Invoke factory processors registered as beans in the context.
+				/* Step5: Invoke factory processors registered as beans in the context.
+				 * 实例化实现了BeanFactoryPostProcessor接口的Bean，并调用接口方法
+				 */
 				invokeBeanFactoryPostProcessors(beanFactory);
 
-				// Register bean processors that intercept bean creation.
+				/* Step6: Register bean processors that intercept bean creation.
+				 * 注册BeanPostProcessor（Bean的后置处理器），在创建Bean的前后等执行
+				 */
 				registerBeanPostProcessors(beanFactory);
 				beanPostProcess.end();
 
-				// Initialize message source for this context.
+				/* Step7: Initialize message source for this context.
+				 * 初始化MessageSource组件, 国际化功能、消息绑定、消息解析
+				 */
 				initMessageSource();
 
-				// Initialize event multicaster for this context.
+				/* Step8: Initialize event multicaster for this context.
+				 * 初始化事件派发器
+				 */
 				initApplicationEventMulticaster();
 
-				// Initialize other special beans in specific context subclasses.
+				/* Step9: Initialize other special beans in specific context subclasses.
+				 * 子类重写这个方法，在容器刷新的时候可以自定义逻辑，如创建Tomcat，Jetty等WEB服务器
+				 */
 				onRefresh();
 
-				// Check for listener beans and register them.
+				/* Step10: Check for listener beans and register them.
+				 * 注册应用的监听器，及时注册实现了ApplicationListener接口的监听器Bean
+				 */
 				registerListeners();
 
-				// Instantiate all remaining (non-lazy-init) singletons.
+				/* Step11: Instantiate all remaining (non-lazy-init) singletons.
+				 * 【重点】初始化所有剩下的非懒加载的单例Bean
+				 * 1. 初始化创建非懒加载方式的单例Bean实例（未设置属性）
+				 * 2. 填充属性
+				 * 3. 初始化方法调用，比如afterPropertiesSet方法、init-method方法
+				 * 4. 调用BeanPostProcessor后置处理器，对实例Bean进行后置处理
+				 * */
 				finishBeanFactoryInitialization(beanFactory);
 
-				// Last step: publish corresponding event.
+				/* Step12: ast step: publish corresponding event.
+				 * 完成context的刷新，主要调用LifecycleProcessor的onRefresh()方法，并发布事件（ContextRefreshEvent)
+				 * */
 				finishRefresh();
 			}
 
@@ -617,6 +648,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 */
 	protected void prepareRefresh() {
 		// Switch to active.
+		// 启动日期startupDate和活动标志active
 		this.startupDate = System.currentTimeMillis();
 		this.closed.set(false);
 		this.active.set(true);
