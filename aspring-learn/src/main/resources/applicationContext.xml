@@ -9,7 +9,13 @@
         https://www.springframework.org/schema/aop/spring-aop.xsd
 ">
 
-	<bean id="springBean" class="com.example.spring.learn.SpringBean"/>
+<!--	<bean id="springBean" class="com.example.spring.learn.SpringBean" lazy-init="true"/>-->
+	<bean id="springBean" class="com.example.spring.learn.SpringBean" >
+		<property name="springBeanOther" ref="springBeanCyclic"/>
+	</bean>
+	<bean id="springBeanCyclic" class="com.example.spring.learn.SpringBeanCyclic" >
+		<property name="springBean" ref="springBean"/>
+	</bean>
 	<bean id="myBeanPostProcessor" class="com.example.spring.learn.MyBeanPostProcessor"/>
 	<bean id="myBeanFactoryPostProcessor" class="com.example.spring.learn.MyBeanFactoryPostProcessor"/>
 

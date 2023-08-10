@@ -1247,7 +1247,8 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		}
 
 		if (candidateNames.length == 1) {
-			return resolveNamedBean(candidateNames[0], requiredType, args);
+			// 懒加载-resolveNamedBean返回结果
+ 			return resolveNamedBean(candidateNames[0], requiredType, args);
 		}
 		else if (candidateNames.length > 1) {
 			Map<String, Object> candidates = CollectionUtils.newLinkedHashMap(candidateNames.length);
@@ -1285,7 +1286,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	@Nullable
 	private <T> NamedBeanHolder<T> resolveNamedBean(
 			String beanName, ResolvableType requiredType, @Nullable Object[] args) throws BeansException {
-
+		// 懒加载最后，又调用了getBean
 		Object bean = getBean(beanName, null, args);
 		if (bean instanceof NullBean) {
 			return null;

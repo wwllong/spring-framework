@@ -10,6 +10,11 @@ import org.springframework.context.ApplicationContextAware;
  * @since 2023/7/6 23:11
  */
 public class SpringBean implements InitializingBean, ApplicationContextAware {
+	private SpringBeanCyclic springBeanCyclic;
+
+	public void setSpringBeanOther(SpringBeanCyclic springBeanCyclic) {
+		this.springBeanCyclic = springBeanCyclic;
+	}
 
 	public SpringBean() {
 		System.out.println("SpringBean 构造器...");
